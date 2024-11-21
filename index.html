@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SSMM Collection Tracker</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://www.gstatic.com/firebasejs/9.17.2/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.2/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.2/firebase-database.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <!-- Login Section -->
+    <div id="login-section" class="container">
+        <h1>SSMM Collection Tracker</h1>
+        <div class="form-group">
+            <label for="loginId">Member ID:</label>
+            <input type="text" id="loginId" placeholder="Enter your member ID" required>
+        </div>
+        <div class="form-group">
+            <label for="password">Password:</label>
+            <input type="password" id="password" placeholder="Enter your password" required>
+        </div>
+        <button id="loginBtn">Login</button>
+        <p id="loginError" class="error-message"></p>
+    </div>
+
+    <!-- Main App Section (Hidden until login) -->
+    <div id="app-section" class="container hidden">
+        <div class="navbar">
+            <h1>SSMM Collection Tracker</h1>
+            <nav>
+                <a href="#form-section">Home</a>
+                <a href="#records-section">View Records</a>
+                <a href="#insights-section">Data Insights</a>
+                <a href="#" id="exportRecords">Export Records</a>
+                <a href="#help-section">Help & FAQ</a>
+            </nav>
+        </div>
+
+        <div id="form-section">
+            <h2>Add Collection Record</h2>
+            <form id="collectionForm">
+                <div class="form-group">
+                    <label for="name">Name:</label>
+                    <input type="text" id="name" placeholder="Enter name" required>
+                </div>
+                <div class="form-group">
+                    <label for="amount">Amount:</label>
+                    <input type="number" id="amount" placeholder="Enter amount" required min="1">
+                </div>
+                <div class="form-group">
+                    <label for="lane">Lane:</label>
+                    <input type="number" id="lane" placeholder="Enter lane number (1-10)" required min="1" max="10">
+                </div>
+                <button type="submit">Add Record</button>
+            </form>
+        </div>
+
+        <div id="records-section">
+            <h2>Collection Records</h2>
+            <table id="recordsTable">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Amount</th>
+                        <th>Lane</th>
+                        <th>Date</th>
+                        <th>Added By</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Records will be dynamically added here -->
+                </tbody>
+            </table>
+        </div>
+
+        <div id="insights-section">
+            <h2>Data Insights</h2>
+            <canvas id="collectionChart" width="400" height="200"></canvas>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
