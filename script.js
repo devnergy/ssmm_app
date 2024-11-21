@@ -1,162 +1,102 @@
-const loginForm = document.getElementById("login");
-const loginUsername = document.getElementById("loginUsername");
-const loginPassword = document.getElementById("loginPassword");
-const loginError = document.getElementById("loginError");
-const loginSection = document.getElementById("loginForm");
-const collectionSection = document.getElementById("collectionSection");
-
-const collectionForm = document.getElementById("collectionForm");
-const recordsTable = document.getElementById("recordsTable").querySelector("tbody");
-const downloadBtn = document.getElementById("downloadBtn");
-const totalCollectionEl = document.getElementById("totalCollection");
-const searchInput = document.getElementById("searchInput");
-const searchResults = document.getElementById("searchResults");
-const weeklyInsightsEl = document.getElementById("weeklyInsights");
-
-let records = [];
-let totalCollection = 0;
-
-// Hardcoded credentials
-const USERNAME = "ssmm";
-const PASSWORD = "ssmm1237";
-
-// Login functionality
-loginForm.addEventListener("submit", function (e) {
-    e.preventDefault();
-
-    fetch('http://localhost:5000/login', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            username: loginUsername.value,
-            password: loginPassword.value
-        }),
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.message === "Login successful") {
-            loginSection.style.display = "none";
-            collectionSection.style.display = "block";
-            fetchRecords(); // Fetch records after login
-        } else {
-            loginError.style.display = "block";
-        }
-    })
-    .catch(error => {
-        console.error("Error:", error);
-    });
-});
-
-// Add a new record
-collectionForm.addEventListener("submit", function (e) {
-    e.preventDefault();
-
-    const name = document.getElementById("name").value.trim();
-    const amount = parseFloat(document.getElementById("amount").value);
-    const lane = parseInt(document.getElementById("lane").value);
-    const date = new Date().toLocaleDateString();
-
-    // Validation
-    if (!name || isNaN(amount) || isNaN(lane) || lane < 1 || lane > 10) {
-        alert("Please enter valid data. Lane number must be between 1 and 10.");
-        return;
-    }
-
-    // Send the record to the backend
-    fetch('http://localhost:5000/add-record', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ name, amount, lane, date })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.message === "Record added successfully") {
-            fetchRecords(); // Fetch updated records
-        } else {
-            alert("Failed to add record.");
-        }
-    })
-    .catch(error => {
-        console.error("Error:", error);
-    });
-});
-
-// Fetch all records from the backend
-function fetchRecords() {
-    fetch('http://localhost:5000/records')
-    .then(response => response.json())
-    .then(data => {
-        records = data;
-        updateRecordsTable();
-        updateTotalCollection();
-        updateWeeklyInsights();
-    })
-    .catch(error => {
-        console.error("Error fetching records:", error);
-    });
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
 }
 
-// Update records table
-function updateRecordsTable() {
-    recordsTable.innerHTML = "";
-    records.forEach(record => {
-        const row = recordsTable.insertRow();
-        row.insertCell(0).textContent = record.name;
-        row.insertCell(1).textContent = record.amount;
-        row.insertCell(2).textContent = record.lane;
-        row.insertCell(3).textContent = record.date;
-    });
+body {
+    font-family: 'Roboto', sans-serif;
+    background-color: #f4f4f9;
+    color: #333;
+    padding: 20px;
 }
 
-// Update total collection
-function updateTotalCollection() {
-    fetch('http://localhost:5000/total-collection')
-    .then(response => response.json())
-    .then(data => {
-        totalCollection = data.total || 0;
-        totalCollectionEl.textContent = totalCollection;
-    })
-    .catch(error => {
-        console.error("Error fetching total collection:", error);
-    });
+header {
+    text-align: center;
+    margin-bottom: 30px;
 }
 
-// Search functionality
-searchInput.addEventListener("input", function () {
-    const query = searchInput.value.toLowerCase();
-    const results = records.filter(record => record.name.toLowerCase().includes(query));
-    searchResults.innerHTML = results
-        .map(record => <li>${record.name} (${record.amount} Rs, Lane ${record.lane})</li>)
-        .join("");
-});
+h1 {
+    font-size: 2em;
+    color: #007bff;
+}
 
-// Download records as Excel
-downloadBtn.addEventListener("click", function () {
-    const headers = ["Name", "Amount", "Lane", "Date"];
-    const rows = records.map(r => [r.name, r.amount, r.lane, r.date]);
+h2 {
+    font-size: 1.5em;
+    margin-top: 20px;
+    color: #333;
+}
 
-    let csvContent = "data:text/csv;charset=utf-8," 
-        + [headers, ...rows].map(e => e.join(",")).join("\n");
+label {
+    font-size: 1em;
+    display: block;
+    margin: 10px 0 5px;
+}
 
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", "SSMM_Collection_Records.csv");
+input {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
 
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-});
+button {
+    padding: 10px 20px;
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
 
-// Weekly insights (just a placeholder for now)
-function updateWeeklyInsights() {
-    // Calculate weekly insights (Placeholder, update with real logic later)
-    const insights = `
-        <p>Total Collection this Week: ${totalCollection}</p>
-    `;
-    weeklyInsightsEl.innerHTML = insights;
+button:hover {
+    background-color: #0056b3;
+}
+
+#collectionFormSection {
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    margin-bottom: 30px;
+}
+
+table {
+    width: 100%;
+    margin-top: 20px;
+    border-collapse: collapse;
+}
+
+table, th, td {
+    border: 1px solid #ccc;
+}
+
+th, td {
+    padding: 10px;
+    text-align: left;
+}
+
+button#downloadBtn {
+    margin-top: 20px;
+    padding: 10px 20px;
+    background-color: #28a745;
+    color: white;
+}
+
+button#downloadBtn:hover {
+    background-color: #218838;
+}
+
+#searchResults {
+    list-style-type: none;
+    margin-top: 10px;
+}
+
+#weeklyInsights {
+    background-color: #fff;
+    padding: 15px;
+    margin-top: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
