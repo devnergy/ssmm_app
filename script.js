@@ -21,14 +21,32 @@ const USERNAME = "ssmm";
 const PASSWORD = "ssmm1237";
 
 // Login functionality
-loginForm.addEventListener("submit", function(e) {
+loginForm.addEventListener("submit", function (e) {
     e.preventDefault();
-    if (loginUsername.value === USERNAME && loginPassword.value === PASSWORD) {
-        loginSection.style.display = "none";
-        collectionSection.style.display = "block";
-    } else {
-        loginError.style.display = "block";
-    }
+
+    fetch('http://localhost:5000/login', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            username: loginUsername.value,
+            password: loginPassword.value
+        }),
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.message === "Login successful") {
+            loginSection.style.display = "none";
+            collectionSection.style.display = "block";
+            fetchRecords(); // Fetch records after login
+        } else {
+            loginError.style.display = "block";
+        }
+    })
+    .catch(error => {
+        console.error("Error:", error);
+    });
 });
 
 // Add a new record
@@ -46,47 +64,65 @@ collectionForm.addEventListener("submit", function (e) {
         return;
     }
 
-    const record = { name, amount, lane, date };
-    records.push(record);
-    addRecordToTable(record);
-    updateTotalCollection();
-    updateWeeklyInsights();
-    collectionForm.reset();
+    // Send the record to the backend
+    fetch('http://localhost:5000/add-record', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name, amount, lane, date })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.message === "Record added successfully") {
+            fetchRecords(); // Fetch updated records
+        } else {
+            alert("Failed to add record.");
+        }
+    })
+    .catch(error => {
+        console.error("Error:", error);
+    });
 });
 
-// Add a record to the table
-function addRecordToTable(record) {
-    const row = recordsTable.insertRow();
-    row.insertCell(0).textContent = record.name;
-    row.insertCell(1).textContent = record.amount;
-    row.insertCell(2).textContent = record.lane;
-    row.insertCell(3).textContent = record.date;
+// Fetch all records from the backend
+function fetchRecords() {
+    fetch('http://localhost:5000/records')
+    .then(response => response.json())
+    .then(data => {
+        records = data;
+        updateRecordsTable();
+        updateTotalCollection();
+        updateWeeklyInsights();
+    })
+    .catch(error => {
+        console.error("Error fetching records:", error);
+    });
+}
+
+// Update records table
+function updateRecordsTable() {
+    recordsTable.innerHTML = "";
+    records.forEach(record => {
+        const row = recordsTable.insertRow();
+        row.insertCell(0).textContent = record.name;
+        row.insertCell(1).textContent = record.amount;
+        row.insertCell(2).textContent = record.lane;
+        row.insertCell(3).textContent = record.date;
+    });
 }
 
 // Update total collection
 function updateTotalCollection() {
-    totalCollection = records.reduce((sum, record) => sum + record.amount, 0);
-    totalCollectionEl.textContent = totalCollection;
-}
-
-// Update weekly insights
-function updateWeeklyInsights() {
-    const today = new Date();
-    const weekStart = new Date(today.setDate(today.getDate() - today.getDay()));
-    const weeklyRecords = records.filter(record => new Date(record.date) >= weekStart);
-
-    let laneSummary = {};
-    weeklyRecords.forEach(record => {
-        laneSummary[record.lane] = (laneSummary[record.lane] || 0) + record.amount;
+    fetch('http://localhost:5000/total-collection')
+    .then(response => response.json())
+    .then(data => {
+        totalCollection = data.total || 0;
+        totalCollectionEl.textContent = totalCollection;
+    })
+    .catch(error => {
+        console.error("Error fetching total collection:", error);
     });
-
-    weeklyInsightsEl.innerHTML = `
-        <li>Total Weekly Collection: ${weeklyRecords.reduce((sum, r) => sum + r.amount, 0)} Rs</li>
-        <li>Average Collection per Day: ${(weeklyRecords.reduce((sum, r) => sum + r.amount, 0) / 7).toFixed(2)} Rs</li>
-        ${Object.keys(laneSummary)
-            .map(lane => <li>Lane ${lane}: ${laneSummary[lane]} Rs</li>)
-            .join("")}
-    `;
 }
 
 // Search functionality
@@ -115,3 +151,12 @@ downloadBtn.addEventListener("click", function () {
     link.click();
     document.body.removeChild(link);
 });
+
+// Weekly insights (just a placeholder for now)
+function updateWeeklyInsights() {
+    // Calculate weekly insights (Placeholder, update with real logic later)
+    const insights = `
+        <p>Total Collection this Week: ${totalCollection}</p>
+    `;
+    weeklyInsightsEl.innerHTML = insights;
+}
