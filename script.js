@@ -1,45 +1,38 @@
-// Firebase Configuration
-const firebaseConfig = {
-    apiKey: "AIzaSyB0cx-i5QdifQwK3WUIlzx_TG2bxC8Ys6A",
-    authDomain: "http://ssmm-app.firebaseapp.com",
-    databaseURL: "YOUR_DATABASE_URL",
-    projectId: "ssmm-app",
-    storageBucket: "http://ssmm-app.firebasestorage.app",
-    messagingSenderId: "1054335387793",
-    appId: "1:1054335387793:web: 4619e0db13c11d8dd09730",
-};
-
-// Initialize Firebase
-const app = firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
-const auth = firebase.auth();
-
-// Login System
-const loginSection = document.getElementById("login-section");
-const appSection = document.getElementById("app-section");
-const loginBtn = document.getElementById("loginBtn");
+const loginForm = document.getElementById("login");
+const loginUsername = document.getElementById("loginUsername");
+const loginPassword = document.getElementById("loginPassword");
 const loginError = document.getElementById("loginError");
+const loginSection = document.getElementById("loginForm");
+const collectionSection = document.getElementById("collectionSection");
 
-let currentUser = null;
+const collectionForm = document.getElementById("collectionForm");
+const recordsTable = document.getElementById("recordsTable").querySelector("tbody");
+const downloadBtn = document.getElementById("downloadBtn");
+const totalCollectionEl = document.getElementById("totalCollection");
+const searchInput = document.getElementById("searchInput");
+const searchResults = document.getElementById("searchResults");
+const weeklyInsightsEl = document.getElementById("weeklyInsights");
 
-loginBtn.addEventListener("click", () => {
-    const loginId = document.getElementById("loginId").value.trim();
-    const password = document.getElementById("password").value.trim();
+let records = [];
+let totalCollection = 0;
 
-    db.ref(users/${loginId}).once("value", (snapshot) => {
-        const user = snapshot.val();
-        if (user && user.password === password) {
-            currentUser = user.name;
-            loginSection.classList.add("hidden");
-            appSection.classList.remove("hidden");
-        } else {
-            loginError.textContent = "Invalid ID or Password!";
-        }
-    });
+// Hardcoded credentials
+const USERNAME = "ssmm";
+const PASSWORD = "ssmm1237";
+
+// Login functionality
+loginForm.addEventListener("submit", function(e) {
+    e.preventDefault();
+    if (loginUsername.value === USERNAME && loginPassword.value === PASSWORD) {
+        loginSection.style.display = "none";
+        collectionSection.style.display = "block";
+    } else {
+        loginError.style.display = "block";
+    }
 });
 
-// Add Record to Firebase
-document.getElementById("collectionForm").addEventListener("submit", (e) => {
+// Add a new record
+collectionForm.addEventListener("submit", function (e) {
     e.preventDefault();
 
     const name = document.getElementById("name").value.trim();
@@ -47,88 +40,78 @@ document.getElementById("collectionForm").addEventListener("submit", (e) => {
     const lane = parseInt(document.getElementById("lane").value);
     const date = new Date().toLocaleDateString();
 
-    db.ref("records").push({ name, amount, lane, date, addedBy: currentUser });
-    document.getElementById("collectionForm").reset();
-});
-
-// Fetch Records
-db.ref("records").on("value", (snapshot) => {
-    const recordsTable = document.getElementById("recordsTable").querySelector("tbody");
-    const records = snapshot.val();
-    recordsTable.innerHTML = "";
-
-    for (const key in records) {
-        const record = records[key];
-        const row = recordsTable.insertRow();
-        row.insertCell(0).textContent = record.name;
-        row.insertCell(1).textContent = record.amount;
-        row.insertCell(2).textContent = record.lane;
-        row.insertCell(3).textContent = record.date;
-        row.insertCell(4).textContent = record.addedBy || "Unknown";
-
-        const actionsCell = row.insertCell(5);
-        const deleteBtn = document.createElement("button");
-        deleteBtn.textContent = "Delete";
-        deleteBtn.onclick = () => db.ref(records/${key}).remove();
-        actionsCell.appendChild(deleteBtn);
+    // Validation
+    if (!name || isNaN(amount) || isNaN(lane) || lane < 1 || lane > 10) {
+        alert("Please enter valid data. Lane number must be between 1 and 10.");
+        return;
     }
+
+    const record = { name, amount, lane, date };
+    records.push(record);
+    addRecordToTable(record);
+    updateTotalCollection();
+    updateWeeklyInsights();
+    collectionForm.reset();
 });
 
-// Add Chart Logic Here (Reuse existing chart code).
-
-// Edit Record
-function editRecord(recordId, record) {
-    document.getElementById("name").value = record.name;
-    document.getElementById("amount").value = record.amount;
-    document.getElementById("lane").value = record.lane;
-    db.ref(records/${recordId}).remove();
+// Add a record to the table
+function addRecordToTable(record) {
+    const row = recordsTable.insertRow();
+    row.insertCell(0).textContent = record.name;
+    row.insertCell(1).textContent = record.amount;
+    row.insertCell(2).textContent = record.lane;
+    row.insertCell(3).textContent = record.date;
 }
 
-// Delete Record
-function deleteRecord(recordId) {
-    db.ref(records/${recordId}).remove();
+// Update total collection
+function updateTotalCollection() {
+    totalCollection = records.reduce((sum, record) => sum + record.amount, 0);
+    totalCollectionEl.textContent = totalCollection;
 }
 
-// Update Chart
-function updateChart() {
-    db.ref("records").once("value", (snapshot) => {
-        const records = snapshot.val();
-        const laneTotals = {};
+// Update weekly insights
+function updateWeeklyInsights() {
+    const today = new Date();
+    const weekStart = new Date(today.setDate(today.getDate() - today.getDay()));
+    const weeklyRecords = records.filter(record => new Date(record.date) >= weekStart);
 
-        for (const key in records) {
-            const record = records[key];
-            laneTotals[record.lane] = (laneTotals[record.lane] || 0) + record.amount;
-        }
-
-        const lanes = Object.keys(laneTotals);
-        const totals = Object.values(laneTotals);
-
-        const ctx = collectionChart.getContext("2d");
-        new Chart(ctx, {
-            type: "bar",
-            data: {
-                labels: lanes.map((l) => Lane ${l}),
-                datasets: [
-                    {
-                        label: "Total Collection (Rs)",
-                        data: totals,
-                        backgroundColor: "rgba(0, 123, 255, 0.5)",
-                        borderColor: "rgba(0, 123, 255, 1)",
-                        borderWidth: 1,
-                    },
-                ],
-            },
-            options: {
-                responsive: true,
-                scales: {
-                    y: { beginAtZero: true },
-                },
-            },
-        });
+    let laneSummary = {};
+    weeklyRecords.forEach(record => {
+        laneSummary[record.lane] = (laneSummary[record.lane] || 0) + record.amount;
     });
+
+    weeklyInsightsEl.innerHTML = `
+        <li>Total Weekly Collection: ${weeklyRecords.reduce((sum, r) => sum + r.amount, 0)} Rs</li>
+        <li>Average Collection per Day: ${(weeklyRecords.reduce((sum, r) => sum + r.amount, 0) / 7).toFixed(2)} Rs</li>
+        ${Object.keys(laneSummary)
+            .map(lane => <li>Lane ${lane}: ${laneSummary[lane]} Rs</li>)
+            .join("")}
+    `;
 }
 
-// Export Records
-exportRecordsBtn.addEventListener("click", () => {
-    alert("Export functionality to be added as per backend integration.");
+// Search functionality
+searchInput.addEventListener("input", function () {
+    const query = searchInput.value.toLowerCase();
+    const results = records.filter(record => record.name.toLowerCase().includes(query));
+    searchResults.innerHTML = results
+        .map(record => <li>${record.name} (${record.amount} Rs, Lane ${record.lane})</li>)
+        .join("");
+});
+
+// Download records as Excel
+downloadBtn.addEventListener("click", function () {
+    const headers = ["Name", "Amount", "Lane", "Date"];
+    const rows = records.map(r => [r.name, r.amount, r.lane, r.date]);
+
+    let csvContent = "data:text/csv;charset=utf-8," 
+        + [headers, ...rows].map(e => e.join(",")).join("\n");
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "SSMM_Collection_Records.csv");
+
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 });
